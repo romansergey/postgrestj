@@ -1,4 +1,4 @@
-package db.structure;
+package org.postgrestj;
 
 import org.junit.rules.ExternalResource;
 import ru.yandex.qatools.embed.postgresql.PostgresExecutable;
