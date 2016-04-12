@@ -21,8 +21,6 @@ public class ServerApplication extends Application<AppConfiguration> {
             @Override
             protected void configure() {
                 bind(new Sql2o(config.getDataSource())).to(Sql2o.class);
-                bindAsContract(CRUDQueryBuilder.class);
-                bindAsContract(DataAccess.class);
                 bindAsContract(RecordStore.class);
             }
         });
