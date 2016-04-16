@@ -1,0 +1,13 @@
+server:
+  type: simple
+  applicationContextPath: /
+  adminContextPath: /admin
+  connector:
+    type: http
+    port: 0
+
+database:
+  driverClass : org.postgresql.Driver
+  url: 'jdbc:postgresql://localhost/test'
+  user: test
+  password: test

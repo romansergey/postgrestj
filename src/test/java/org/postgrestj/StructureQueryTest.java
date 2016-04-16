@@ -1,8 +1,6 @@
 package org.postgrestj;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.postgrestj.model.TableColumnDef;
 import org.postgrestj.model.TableDef;
 import org.postgrestj.model.TableDescription;
@@ -22,8 +20,8 @@ import static org.junit.Assert.assertThat;
  */
 public class StructureQueryTest {
 
-    @Rule
-    public DbResource dbResource = new DbResource();
+    @ClassRule
+    public static DbResource dbResource = new DbResource();
 
     private Sql2o sql2o;
 
@@ -37,6 +35,11 @@ public class StructureQueryTest {
                 "test"
         );
         dbStructureReader = new DbStructureReader(sql2o);
+    }
+
+    @After
+    public void cleanup() {
+        runQuery("drop schema public cascade; create schema public");
     }
 
     @Test

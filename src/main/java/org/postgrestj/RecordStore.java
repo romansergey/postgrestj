@@ -1,6 +1,7 @@
 package org.postgrestj;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.postgrestj.exceptions.*;
 import org.postgrestj.model.TableColumnDescription;
 import org.postgrestj.model.TableDescription;
@@ -8,6 +9,7 @@ import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.Sql2o;
 
+import javax.inject.Inject;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -21,18 +23,23 @@ public class RecordStore {
     private Sql2o sql2o;
     private Map<String, TableDescription> schema;
 
-    public RecordStore(Sql2o sql2o, Map<String, TableDescription> schema) {
+    @Inject
+    public RecordStore(Sql2o sql2o) {
         this.sql2o = sql2o;
-        this.schema = schema;
+        this.schema = new DbStructureReader(sql2o).getDescription();
     }
 
     public Map<String, Object> getById(String tableName, Object id) {
+
+
         TableDescription tableDescription = schema.get(tableName);
         String primaryKey = tableDescription.getPrimaryKey()
                 .orElseThrow(() -> new NoPrimaryKeyException());
 
+        //String typedId = getTypedColumnValue(tableName, primaryKey, id);
+
         String query = String.format("SELECT * FROM %s WHERE %s = :id LIMIT 1", tableName, primaryKey);
-        return sql2o.open()
+        Map<String, Object> fields = sql2o.open()
                 .createQuery(query)
                 .addParameter("id", id)
                 .executeAndFetchTable()
@@ -40,6 +47,10 @@ public class RecordStore {
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new RecordNotFoundException(tableName, id));
+
+        return fields.keySet().stream()
+                .map(k -> Pair.of(k, fields.get(k)))
+                .collect(Collectors.toMap(Pair::getLeft, Pair::getRight));
     }
 
     public void update(String tableName, Object id, Map<String, Object> fields) {
@@ -75,7 +86,7 @@ public class RecordStore {
         }
     }
 
-    public Object create(String tableName, HashMap<String, Object> fields) {
+    public Object create(String tableName, Map<String, Object> fields) {
         TableDescription tableDescription = schema.get(tableName);
         String primaryKey = tableDescription.getPrimaryKey()
                 .orElseThrow(() -> new NoPrimaryKeyException());
@@ -91,13 +102,8 @@ public class RecordStore {
         }
     }
 
-    public Object getTypedColumnValue(String value, TableColumnDescription columnDescription) {
-        if("integer".equals(columnDescription.getColumnType())) {
-            return Integer.parseInt(value);
-        } else {
-            return value;
-        }
-    }
+
+
 
     Function<Query, Query> addParamsFunction(Set<Map.Entry<String, Object>> entrySet) {
         return entrySet
@@ -141,5 +147,9 @@ public class RecordStore {
         TableDescription tableDescription = schema.get(tableName);
         return tableDescription.getPrimaryKey()
                 .orElseThrow(() -> new NoPrimaryKeyException());
+    }
+
+    public Map<String, TableDescription> getSchema() {
+        return schema;
     }
 }
